@@ -1,0 +1,58 @@
+project_name: "example running config"
+save_dir: "/path/to/save/"
+description:
+
+train_kwargs:
+  # max_epochs:
+  # batch_size:
+  # lr:
+  early_stopping: true
+  # early_stopping_patience:
+
+data_kwargs:
+  batch_key: "batch"
+  label_key: "cell_type"
+  size_factor_key: "size_factor"
+  annotation_key: "annotation" # with keys: [clusters, background]
+
+model_kwargs:
+  n_topics: 20
+  n_clusters: 10
+
+extra_kwargs:
+  spectra:
+    train_kwargs:
+      num_epochs: 10000
+      early_stopping_patience: 50
+  pycogaps:
+    train_kwargs:
+      nIterations: 50000
+  dcjcomm:
+    train_kwargs:
+      maxIter: 100
+    model_kwargs:
+      xita: 2
+  muvi:
+    model_kwargs:
+      prior_confidence: "low"
+      nmf: false
+      pos_transform: "relu"
+      normalize: true
+    train_kwargs:
+      batch_size: 0
+      n_epochs: 0 # the model may need more epochs than others
+  topicvi:
+    model_kwargs:
+      # topic_decoder_params:
+      #   n_topics_without_prior: 25
+    data_kwargs:
+      setup_kwargs:
+  
+  # --- 
+
+  scgpt_continous_training:
+    model_kwargs: 
+      pretrained_model_path: "../data/scGPT_CP/"
+
+
+

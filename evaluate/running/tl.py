@@ -11,11 +11,9 @@ from tqdm import tqdm
 import seaborn as sns
 import matplotlib.pyplot as plt
 import scib
-from topicvi import *
-sys.path.append('../external/')
-from model import inverse_davies_bouldin_score
-from utils import load_results, write_config, load_config
-from preprocess import preprocess_adata
+from topicvi.model import inverse_davies_bouldin_score
+from topicvi.utils import load_results, write_config, load_config
+from topicvi.preprocess import preprocess_adata
 
 def subsample_from_annote(
     annote: pd.DataFrame,

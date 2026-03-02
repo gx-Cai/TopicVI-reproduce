@@ -9,8 +9,6 @@ import scanpy as sc
 import scipy.sparse as sp
 import torch
 
-from . import filter_kwargs
-
 sys.path.append("../../external/")
 
 def scgpt_zero_shot(
@@ -250,7 +248,6 @@ def expimap(
     adata.varm['I'] = adata.varm['I'][:, select_terms]
     print("filter terms less than 5 genes, remaining:", len(adata.uns['terms']))
 
-    model_kwargs = filter_kwargs(model_kwargs, expiMap.__init__)
     if model_kwargs.get('n_ext_m_'):
         print("constrained node is not valid when train reference, parameter `n_ext_m` is deleted", model_kwargs.pop('n_ext_m_')
     )

@@ -13,23 +13,20 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import scib
 
+from running import RunningPipeline
+from running.run_factors import *
+from running.run_presentation import *
+from running.tl import load_config
+from topicvi.metrics import TopicMetrics
+from topicvi.prior import *
+from topicvi.model import inverse_davies_bouldin_score
+from sklearn.metrics import calinski_harabasz_score
+
 warnings.filterwarnings('ignore')
 warnings.simplefilter("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module='pandas')
 warnings.filterwarnings("ignore", category=DeprecationWarning, module='torchmetrics')
 warnings.filterwarnings("ignore", category=DeprecationWarning, module='scarches')
-
-from topicvi import *
-sys.path.append('../external/')
-
-from running import RunningPipeline
-from running.run_factors import *
-from running.run_presentation import *
-from running.tl import load_config
-from utils.metrics import TopicMetrics
-from utils.prior import *
-from model import inverse_davies_bouldin_score
-from sklearn.metrics import calinski_harabasz_score
 
 sns.set_style('whitegrid')
 plt.rcParams['font.family'] = 'Arial'
@@ -104,7 +101,7 @@ def display_topic_max_overlap(prior, topic, n=5):
         sns.despine(left=True, bottom=True, ax=ax, top=True, right=True)
         ax.set_xlabel('')
         ax.set_ylabel('')
-        ax.set_xticks([])
+        # ax.set_xticks([])
         texts = [i.get_text() for i in ax.get_yticklabels()]
         ax.set_yticklabels([])
         for i, txt in enumerate(texts):
@@ -113,6 +110,7 @@ def display_topic_max_overlap(prior, topic, n=5):
                 ha = 'left', va = 'center', fontsize=12,
                 fontweight='semibold', color='black'
             )
+    return ax
 
 def visualize_embeddings_and_nmi(show, save=False):
     f, axes = plt.subplots(2, 2, figsize=(8, 8))
@@ -147,10 +145,11 @@ def display_cltVsground(title, ax0, ax1, key, basis):
         legend_fontoutline=1
     )
     ax0.text(
-        s = "NMI: {:.2f}".format(nmi_score(adata.obs[label_key], adata.obs[key])),
-        x = 0.15, y = 0.9, ha = 'center', va = 'center', 
+        # s = "NMI: {:.2f}".format(nmi_score(adata.obs[label_key], adata.obs[key])),
+        s = f'isolated label score F1: {max_f1(adata.obs[label_key], adata.obs[key]):.2f}',
+        x = 0.5, y = 0.95, ha = 'center', va = 'center', 
         transform=ax0.transAxes,
-        fontsize=10, color = '.5'
+        fontsize=14, color = '.5'
     )
     sc.pl.embedding(
         adata,basis=basis, color=label_key,
@@ -171,10 +170,11 @@ def display_all3(title, key1, key2, basis):
         legend_fontoutline=1
     )
     axes[0].text(
-        s = "NMI: {:.2f}".format(nmi_score(adata.obs[label_key], adata.obs[key1])),
-        x = 0.15, y = 0.9, ha = 'center', va = 'center', 
+        # s = "NMI: {:.2f}".format(nmi_score(adata.obs[label_key], adata.obs[key1])),
+        s = f'isolated label score F1: {max_f1(adata.obs[label_key], adata.obs[key1]):.2f}',
+        x = 0.5, y = 0.95, ha = 'center', va = 'center', 
         transform=axes[0].transAxes,
-        fontsize=10, color = '.5'
+        fontsize=14, color = '.5'
     )
     sc.pl.embedding(
         adata,basis=basis, color=key2,
@@ -184,10 +184,11 @@ def display_all3(title, key1, key2, basis):
         legend_loc='on data',
     )
     axes[1].text(
-        s = "NMI: {:.2f}".format(nmi_score(adata.obs[label_key], adata.obs[key2])),
-        x = 0.15, y = 0.9, ha = 'center', va = 'center',
+        # s = "NMI: {:.2f}".format(nmi_score(adata.obs[label_key], adata.obs[key2])),
+        s = f'isolated label score F1: {max_f1(adata.obs[label_key], adata.obs[key2]):.2f}',
+        x = 0.5, y = 0.95, ha = 'center', va = 'center',
         transform=axes[1].transAxes,
-        fontsize=10, color = '.5'
+        fontsize=14, color = '.5'
     )
     sc.pl.embedding(
         adata,basis=basis, color=label_key,
@@ -197,13 +198,28 @@ def display_all3(title, key1, key2, basis):
 
     return f
 
+def max_f1(label_true, label_pred, ):
+    from sklearn.metrics import f1_score
+    unique_clusters = np.unique(label_pred)
+    result = []
+    for target_label in np.unique(label_true):
+        max_score = 0
+        for cluster in unique_clusters:
+            y_pred = label_pred == cluster
+            y_true = label_true == target_label
+            score = f1_score(y_true, y_pred)
+            if score > max_score:
+                max_score = score
+        result.append(max_score)
+    return np.mean(result)
+
 base_dir = '../results/'
 data_ids = os.listdir(base_dir)
 if '.ipynb_checkpoints' in data_ids:
     data_ids.remove('.ipynb_checkpoints')
 print('\n'.join(data_ids))
 
-data_id = 'Mariana_24NC'
+data_id = 'pbmc10k'# 'zheng68k_sorted' 
 
 config = load_config(os.path.join(base_dir, data_id, 'running_config.yaml'))
 adata = sc.read_h5ad(os.path.join(base_dir, data_id, 'adata.h5ad'))
@@ -218,7 +234,8 @@ topicvi_result = load_results(data_id, 'topicvi')
 adata.obs['topicvi_pred'] = pd.Categorical(topicvi_result['labels'].astype(str))
 print(
     ari_score(adata.obs[label_key], topicvi_result['labels']),
-    nmi_score(adata.obs[label_key], topicvi_result['labels'])
+    nmi_score(adata.obs[label_key], topicvi_result['labels']),
+    max_f1(adata.obs[label_key], topicvi_result['labels'])
 )
 scanvi_result = load_results(data_id, 'scanvi_seed_label')
 
@@ -259,7 +276,8 @@ adata.obs['scanvi_pred'] = pd.Categorical(pd.Series(scanvi_result['labels']).map
 # adata.obs['scanvi_pred'] = pd.Categorical(pd.Series(scanvi_result['labels']))
 print(
     ari_score(adata.obs[label_key], scanvi_result['labels']),
-    nmi_score(adata.obs[label_key], scanvi_result['labels'])
+    nmi_score(adata.obs[label_key], scanvi_result['labels']),
+    max_f1(adata.obs[label_key], scanvi_result['labels'])
 )
 
 adata.obsm['scvi'] = scvi_result['embedding']
@@ -309,6 +327,7 @@ display_cltVsground(
     key='leiden_scvi',
     basis='umap_scvi'
 )
+f.savefig(f'../assets/zheng68k_sorted/{data_id}_scvi.pdf', bbox_inches='tight', dpi=300)
 
 fdata = sc.AnnData(
     X = topicvi_result['loading'],
@@ -403,7 +422,11 @@ if data_id == 'pbmc10k':
     f.savefig(f'../assets/{data_id}_interferon_signaling.pdf', bbox_inches='tight', dpi=300)
 
     topic = topics[17]
-    display_topic_max_overlap(prior, topic)
+    ax = display_topic_max_overlap(prior, topic)
+    ax.set_xlabel('Jaccard Similarity')
+    ax.set_ylabel('Top 5 Related Prior Topics')
+    plt.gcf().savefig('../assets/pbmc10k/topic_17_overlap.pdf', bbox_inches='tight', )
+
 
 if data_id == 'zheng68k_sorted':
     # 
@@ -416,13 +439,14 @@ if data_id == 'zheng68k_sorted':
     adata.obsm['dcjcomm'] = dcjcomm_result['loading']
     make_clusters_obsm(adata,'dcjcomm', label_key)
     f = display_all3('DCJComm', 'dcjcomm_pred', 'leiden_dcjcomm', 'umap_dcjcomm')
-    f.savefig(f'../assets/{data_id}_dcjcomm.pdf', bbox_inches='tight', dpi=300)
+    f.savefig(f'../assets/zheng68k_sorted/{data_id}_dcjcomm.pdf', bbox_inches='tight', dpi=300)
 
     topicvi_denovo_result = load_results(data_id, 'topicvi_denovo_finding')
     adata.obs['topicvi_denovo_pred'] = pd.Categorical(topicvi_denovo_result['labels'].astype(int))
     adata.obsm['topicvi_denovo'] = topicvi_denovo_result['embedding']
     make_clusters_obsm(adata,'topicvi_denovo', label_key)
-    display_all3('TopicVI (denovo)', 'topicvi_denovo_pred', 'leiden_topicvi_denovo', 'umap_topicvi_denovo')
+    f = display_all3('TopicVI (denovo)', 'topicvi_denovo_pred', 'leiden_topicvi_denovo', 'umap_topicvi_denovo')
+    f.savefig(f'../assets/zheng68k_sorted/{data_id}_topicvi_denovo.pdf', bbox_inches='tight', dpi=300)
 
     expimap_result = load_results(data_id, 'expimap')
     adata.obsm['expimap'] = expimap_result['embedding']
@@ -434,7 +458,7 @@ if data_id == 'zheng68k_sorted':
         key='leiden_expimap',
         basis='umap_expimap'
     )
-    f.savefig(f'../assets/{data_id}_expimap.pdf', bbox_inches='tight', dpi=300)
+    f.savefig(f'../assets/zheng68k_sorted/{data_id}_expimap.pdf', bbox_inches='tight', dpi=300)
     
     # adata.obsm['X_pca']
     make_clusters_obsm(adata,'scvi', label_key,)

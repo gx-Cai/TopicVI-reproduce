@@ -502,11 +502,10 @@ def topicvi(
     model_kwargs=dict(n_topics=20),
     save_model=None,
 ):
-    sys.path.append('../../src/')
 
-    from model.module import TopicVI
-    from model import inverse_davies_bouldin_score
-    from prior import clean_prior_dict
+    from topicvi.model.module import TopicVI
+    from topicvi.model import inverse_davies_bouldin_score
+    from topicvi.prior import clean_prior_dict
     import scib
     import warnings
     warnings.filterwarnings("ignore", category=DeprecationWarning, module='torchmetrics')

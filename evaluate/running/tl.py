@@ -11,6 +11,8 @@ from tqdm import tqdm
 import seaborn as sns
 import matplotlib.pyplot as plt
 import scib
+
+sys.path.append('../external/')
 from topicvi.model import inverse_davies_bouldin_score
 from topicvi.utils import load_results, write_config, load_config
 from topicvi.preprocess import preprocess_adata

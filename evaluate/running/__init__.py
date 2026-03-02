@@ -1,4 +1,2 @@
 import sys
-from topicvi import *
-
-from run import RunningPipeline
+from topicvi.run import RunningPipeline
